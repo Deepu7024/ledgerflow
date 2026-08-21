@@ -10,7 +10,7 @@ export type Category =
   | 'Personal'
   | 'Other';
 
-export type Source = 'SMS' | 'Cash' | 'PhonePe';
+export type Source = 'SMS' | 'Cash' | 'PhonePe' | 'Email';
 
 export interface Transaction {
   id: string;
@@ -32,6 +32,15 @@ export type ManualExpenseInput = {
   amount: number;
   category: Category;
   isCashEntry: boolean;
+};
+
+/** Response from POST /api/agent/sync-mail. */
+export type MailSyncResult = {
+  scanned: number;
+  already_processed: number;
+  added: number;
+  skipped: number;
+  errors: string[];
 };
 
 /** Amount that actually counts against the user's own spending. */

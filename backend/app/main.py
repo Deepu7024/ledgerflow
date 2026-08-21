@@ -1,11 +1,22 @@
 from contextlib import asynccontextmanager
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Must run before any of this project's own modules — several of them read
+# GMAIL_*/ANTHROPIC_API_KEY as module-level constants at import time.
+# An explicit path is deliberate: load_dotenv() with no path walks up parent
+# directories looking for a ".env" and will happily load an unrelated one
+# from somewhere above this repo (e.g. a home-directory .env from another
+# project) — that's a real footgun, not a hypothetical one.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Session
 
 from app.database import create_db_and_tables, engine
-from app.routers import expenses
+from app.routers import agent, expenses
 from app.seed import seed_if_empty
 
 
@@ -29,6 +40,7 @@ app.add_middleware(
 )
 
 app.include_router(expenses.router, prefix="/api")
+app.include_router(agent.router, prefix="/api")
 
 
 @app.get("/")

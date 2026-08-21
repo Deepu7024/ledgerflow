@@ -21,7 +21,7 @@ export const CATEGORIES: Category[] = [
   'Other',
 ];
 
-export const SOURCES: Source[] = ['SMS', 'Cash', 'PhonePe'];
+export const SOURCES: Source[] = ['SMS', 'Cash', 'PhonePe', 'Email'];
 
 export const CATEGORY_STYLES: Record<Category, string> = {
   'Food & Dining': 'bg-orange-500/10 text-orange-300 ring-orange-500/25',

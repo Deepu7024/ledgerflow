@@ -21,6 +21,8 @@ backend/__pycache__/
 backend/**/__pycache__/
 backend/*.db
 backend/.env
+backend/credentials.json
+backend/token.json
 
 # --- misc ---
 .DS_Store

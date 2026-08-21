@@ -27,6 +27,7 @@ class Source(str, Enum):
     SMS = "SMS"
     CASH = "Cash"
     PHONEPE = "PhonePe"
+    EMAIL = "Email"
 
 
 def new_id() -> str:
@@ -46,3 +47,17 @@ class Transaction(SQLModel, table=True):
     isBusiness: bool = False
     isTransfer: bool = False
     isSplit: bool = False
+
+
+class ProcessedEmail(SQLModel, table=True):
+    """
+    Dedupe ledger for the mail-sync agent — one row per Gmail message ever
+    looked at, so a re-sync never double-inserts or re-classifies the same
+    email.
+    """
+
+    message_id: str = Field(primary_key=True)
+    is_transaction: bool
+    transaction_id: Optional[str] = None
+    skipped_reason: Optional[str] = None
+    processed_at: str  # ISO 8601, when this sync ran

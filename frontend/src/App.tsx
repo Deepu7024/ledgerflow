@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { Menu, Plus, RefreshCw } from 'lucide-react';
+import { Mail, Menu, Plus, RefreshCw } from 'lucide-react';
 import Sidebar, { View } from './components/Sidebar';
 import SummaryCards from './components/SummaryCards';
 import TransactionsTable from './components/TransactionsTable';
@@ -10,7 +10,7 @@ import Analytics from './components/Analytics';
 import ErrorBanner from './components/ErrorBanner';
 import ToastStack, { ToastMessage } from './components/Toast';
 import { TagOption } from './components/TagMenu';
-import { createManualExpense, fetchExpenses, updateExpense } from './api';
+import { createManualExpense, fetchExpenses, syncMail, updateExpense } from './api';
 import { ManualExpenseInput, Transaction } from './types';
 import { MONTHLY_BUDGET_DEFAULT, SEED_TRANSACTIONS } from './constants';
 
@@ -36,6 +36,7 @@ export default function App() {
   const [manualModalOpen, setManualModalOpen] = useState(false);
   const [savingSplit, setSavingSplit] = useState(false);
   const [savingManual, setSavingManual] = useState(false);
+  const [syncingMail, setSyncingMail] = useState(false);
 
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
@@ -135,6 +136,24 @@ export default function App() {
     }
   }
 
+  async function handleSyncMail() {
+    setSyncingMail(true);
+    try {
+      const result = await syncMail();
+      if (result.added > 0) {
+        await loadExpenses();
+      }
+      pushToast(
+        `Mail sync: ${result.added} added, ${result.skipped} skipped, ${result.scanned} scanned.`,
+        'success'
+      );
+    } catch (err) {
+      pushToast(err instanceof Error ? err.message : 'Mail sync failed.', 'error');
+    } finally {
+      setSyncingMail(false);
+    }
+  }
+
   const { title, subtitle } = VIEW_TITLES[view];
 
   return (
@@ -162,6 +181,14 @@ export default function App() {
             >
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
               <span className="hidden sm:inline">Refresh</span>
+            </button>
+            <button
+              onClick={handleSyncMail}
+              disabled={syncingMail}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-medium text-zinc-300 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Mail size={14} className={syncingMail ? 'animate-pulse' : ''} />
+              <span className="hidden sm:inline">{syncingMail ? 'Syncing…' : 'Sync from Mail'}</span>
             </button>
             <button
               onClick={() => setManualModalOpen(true)}

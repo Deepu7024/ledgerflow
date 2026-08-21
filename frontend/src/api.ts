@@ -1,5 +1,5 @@
 import { API_BASE_URL } from './constants';
-import { ManualExpenseInput, Transaction } from './types';
+import { MailSyncResult, ManualExpenseInput, Transaction } from './types';
 
 export class ApiError extends Error {}
 
@@ -44,6 +44,20 @@ export async function updateExpense(
   });
   if (!res.ok) {
     throw new ApiError(`Failed to update expense (${res.status})`);
+  }
+  return res.json();
+}
+
+/**
+ * POST /api/agent/sync-mail
+ * Triggers the mail-reading agent: scans recent email, has Claude classify
+ * and extract each candidate transaction, and inserts any real matches.
+ */
+export async function syncMail(): Promise<MailSyncResult> {
+  const res = await fetch(`${API_BASE_URL}/agent/sync-mail`, { method: 'POST' });
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(body?.detail ?? `Mail sync failed (${res.status})`);
   }
   return res.json();
 }
