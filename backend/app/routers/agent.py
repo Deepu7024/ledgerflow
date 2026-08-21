@@ -1,8 +1,8 @@
 import os
 from datetime import datetime, timezone
 
-import anthropic
 from fastapi import APIRouter, Depends, HTTPException
+from google import genai
 from sqlmodel import Session, select
 
 from app.database import get_session
@@ -19,7 +19,7 @@ DEFAULT_MAX_RESULTS = int(os.getenv("MAIL_SYNC_MAX_RESULTS", "25"))
 @router.post("/sync-mail")
 def sync_mail(session: Session = Depends(get_session)):
     """
-    Fetch recent emails, ask Claude to classify+extract each one, and insert
+    Fetch recent emails, ask Gemini to classify+extract each one, and insert
     a Transaction (source="Email") for anything that looks like a real
     charge. Already-seen message IDs (per ProcessedEmail) are skipped
     without re-fetching or re-classifying them.
@@ -29,6 +29,14 @@ def sync_mail(session: Session = Depends(get_session)):
     except GmailNotAuthorizedError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
 
+    try:
+        gemini_client = genai.Client()
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail=f"Gemini client not configured: {exc} Set GEMINI_API_KEY in backend/.env.",
+        ) from exc
+
     candidate_ids = list_message_ids(service, DEFAULT_QUERY, DEFAULT_MAX_RESULTS)
     already_seen = set(
         session.exec(
@@ -37,7 +45,6 @@ def sync_mail(session: Session = Depends(get_session)):
     )
     new_ids = [mid for mid in candidate_ids if mid not in already_seen]
 
-    anthropic_client = anthropic.Anthropic()
     added = 0
     skipped = 0
     errors: list[str] = []
@@ -46,7 +53,7 @@ def sync_mail(session: Session = Depends(get_session)):
     for message_id in new_ids:
         try:
             email = get_message(service, message_id)
-            extracted = extract_expense(anthropic_client, email.subject, email.sender, email.body_text)
+            extracted = extract_expense(gemini_client, email.subject, email.sender, email.body_text)
 
             if extracted.is_transaction and extracted.merchant and extracted.amount:
                 category_value = extracted.category.value if extracted.category else Category.OTHER.value

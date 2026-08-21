@@ -18,15 +18,15 @@ no translation layer needed on either side).
 
 ## The mail-reading agent
 
-`POST /api/agent/sync-mail` fetches recent Gmail messages, asks Claude to
+`POST /api/agent/sync-mail` fetches recent Gmail messages, asks Gemini to
 classify each one (is this a transaction notification?) and, if so, extract
 the merchant/amount/category, then inserts a `Transaction` with
 `source: "Email"` for every real match. Already-seen message IDs are tracked
 in a `ProcessedEmail` table so re-running the sync never double-inserts.
 
 This is a single classification+extraction call per email
-(`client.messages.parse` with a Pydantic `output_format`) — not an
-open-ended agent loop — which is the right amount of machinery for "read
+(`client.models.generate_content` with a Pydantic `response_schema`) — not
+an open-ended agent loop — which is the right amount of machinery for "read
 this email, tell me if it's a charge."
 
 ### One-time setup
@@ -56,14 +56,14 @@ Gmail access, then writes `backend/token.json` (also gitignored). The
 backend reads and auto-refreshes this token on every sync — you shouldn't
 need to run this again unless the file is deleted or you revoke access.
 
-**3. Anthropic API key**
+**3. Gemini API key**
 
 ```bash
 # backend/.env (create this file — gitignored)
-ANTHROPIC_API_KEY=sk-ant-...
+GEMINI_API_KEY=...
 ```
 
-Get a key at [console.anthropic.com](https://console.anthropic.com/).
+Get a key at [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
 
 ### Triggering a sync
 
@@ -85,10 +85,13 @@ Either `curl -X POST http://localhost:8001/api/agent/sync-mail`, or the
 
 ### Cost note
 
-Each new email costs one Claude API call (`claude-opus-5`, ~1K output
-tokens max). At the default cap of 25 messages per sync, a single sync is
-at most 25 calls — already-processed messages are skipped before any call
-is made, so repeated syncs of the same mailbox cost nothing extra.
+Each new email costs one Gemini API call (`gemini-3.7-flash`, set in
+`app/mail/extractor.py`). At the default cap of 25 messages per sync, a
+single sync is at most 25 calls — already-processed messages are skipped
+before any call is made, so repeated syncs of the same mailbox cost nothing
+extra. If that model name ever 404s (Google's model lineup moves fast),
+check [ai.google.dev/gemini-api/docs/models](https://ai.google.dev/gemini-api/docs/models)
+for the current flash-tier model and update the `MODEL` constant.
 
 ## Run it locally
 
@@ -137,7 +140,7 @@ backend/
     seed.py            Demo rows, mirrors the frontend's SEED_TRANSACTIONS
     mail/
       gmail_client.py  OAuth token load/refresh, list + fetch messages
-      extractor.py      Claude classification+extraction per email
+      extractor.py      Gemini classification+extraction per email
     routers/
       expenses.py      The three expense routes above
       agent.py          POST /api/agent/sync-mail

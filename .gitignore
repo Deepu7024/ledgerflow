@@ -23,6 +23,10 @@ backend/*.db
 backend/.env
 backend/credentials.json
 backend/token.json
+# Google's default download name for OAuth client secrets — catch it
+# anywhere under backend/ in case it lands somewhere other than
+# backend/credentials.json before being renamed.
+backend/**/client_secret_*.json
 
 # --- misc ---
 .DS_Store

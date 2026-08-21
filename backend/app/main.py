@@ -4,7 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 # Must run before any of this project's own modules — several of them read
-# GMAIL_*/ANTHROPIC_API_KEY as module-level constants at import time.
+# GMAIL_*/GEMINI_API_KEY as module-level constants at import time.
 # An explicit path is deliberate: load_dotenv() with no path walks up parent
 # directories looking for a ".env" and will happily load an unrelated one
 # from somewhere above this repo (e.g. a home-directory .env from another

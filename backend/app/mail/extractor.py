@@ -1,16 +1,17 @@
 """
 Turns one email's text into a structured expense (or a decision that it
-isn't one) using Claude — a single classification+extraction call per
+isn't one) using Gemini — a single classification+extraction call per
 email, no agentic tool loop needed for this shape of task.
 """
 from typing import Optional
 
-import anthropic
+from google import genai
+from google.genai import types
 from pydantic import BaseModel
 
 from app.models import Category
 
-MODEL = "claude-opus-5"
+MODEL = "gemini-3.7-flash"
 
 _CATEGORY_LIST = ", ".join(c.value for c in Category)
 
@@ -47,18 +48,17 @@ class ExtractedExpense(BaseModel):
 
 
 def extract_expense(
-    client: anthropic.Anthropic, subject: str, sender: str, body_text: str
+    client: genai.Client, subject: str, sender: str, body_text: str
 ) -> ExtractedExpense:
-    response = client.messages.parse(
+    response = client.models.generate_content(
         model=MODEL,
-        max_tokens=1024,
-        system=SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": f"Subject: {subject}\nFrom: {sender}\n\n{body_text}",
-            }
-        ],
-        output_format=ExtractedExpense,
+        contents=f"Subject: {subject}\nFrom: {sender}\n\n{body_text}",
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
+            response_mime_type="application/json",
+            response_schema=ExtractedExpense,
+        ),
     )
-    return response.parsed_output
+    if response.parsed is None:
+        raise ValueError(f"Gemini returned no parseable output: {response.text!r}")
+    return response.parsed
