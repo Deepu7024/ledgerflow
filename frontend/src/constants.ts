@@ -1,6 +1,10 @@
 import { Category, Source, Transaction } from './types';
 
-export const API_BASE_URL = 'https://your-backend.onrender.com/api';
+// REACT_APP_API_BASE_URL is inlined at build time from frontend/.env.development
+// or frontend/.env.production — see those files, and README.md, for how the
+// two halves of this app get wired together per environment.
+export const API_BASE_URL =
+  process.env.REACT_APP_API_BASE_URL ?? 'https://your-backend.onrender.com/api';
 
 export const MONTHLY_BUDGET_DEFAULT = 45000;
 

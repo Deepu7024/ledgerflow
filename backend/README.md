@@ -23,7 +23,7 @@ python3 -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8001
 ```
 
 The first run creates `ledgerflow.db` (SQLite) next to `app/` and seeds it
@@ -31,7 +31,7 @@ with the same demo rows as the frontend's own `SEED_TRANSACTIONS` fallback.
 Delete the file to reset.
 
 Point the frontend at it by setting `API_BASE_URL` in
-`frontend/src/constants.ts` to `http://localhost:8000/api`.
+`frontend/src/constants.ts` to `http://localhost:8001/api`.
 
 ## Storage
 
